@@ -1,0 +1,9 @@
+---
+
+zbxp_plugin_name: "zbx_journald"
+zbxp_plugin_repository_binary_url: https://github.com/Hypernova-Oy/zabbix-agent2-plugin-journald/raw/master/release/aarch64/zbx_journald
+zbxp_plugin_configurations:
+  - directive: Plugins.{{zbxp_plugin_name}}.Test
+    value: 1
+zbxp_plugin_version: 1.0
+

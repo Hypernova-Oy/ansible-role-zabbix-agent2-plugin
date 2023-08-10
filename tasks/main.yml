@@ -1,0 +1,32 @@
+---
+
+- name: "{{zbxp_plugin_name}} - Set facts"
+  set fact:
+    zbxp_plugin_binary_filepath: "/usr/local/zabbix/go/plugins/{{zbxp_plugin_name}}.{{zbxp_plugin_version}}/{{zbxp_plugin_name}}"
+
+- name: "{{zbxp_plugin_name}} - Get the binary"
+  get_url:
+    url: "{{zbxp_plugin_repository_binary_url}}"
+    dest: "{{zbxp_plugin_binary_filepath}}"
+    owner: zabbix
+    group: zabbix
+    mode: 0755
+  become: true
+
+- name: "{{zbxp_plugin_name}} - Link custom plugin to Zabbix Agent2 configuration"
+  lineinfile:
+    dest: "/etc/zabbix/zabbix_agent2.d/plugins.d/{{zbxp_plugin_name}}.conf"
+    regexp: "Plugins.{{zbxp_plugin_name}}.System.Path={{zbxp_plugin_binary_filepath}}"
+  become: true
+  notify: "restart zabbix-agent2"
+
+- name: "{{zbxp_plugin_name}} - Deploy plugin configuration"
+  lineinfile:
+    dest: "/etc/zabbix/zabbix_agent2.d/plugins.d/{{zbxp_plugin_name}}.conf"
+    regexp: "{{item.directive}}"
+    line: "{{item.value}}"
+    stat: present
+    create: "{{item.create|d('yes')}}"
+  with_items: "{{zbxp_plugin_configurations}}"
+  become: true
+  notify: "restart zabbix-agent2"
