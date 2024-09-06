@@ -1,14 +1,22 @@
 ---
 
 - name: "{{zbxp_plugin_name}} - Set facts"
-  set fact:
-    zbxp_plugin_binary_filepath: "/usr/local/zabbix/go/plugins/{{zbxp_plugin_name}}.{{zbxp_plugin_version}}/{{zbxp_plugin_name}}"
+  set_fact:
+    zbxp_plugin_binary_dir:      "/usr/local/zabbix/go/plugins/{{zbxp_plugin_name}}"
+- set_fact:
+    zbxp_plugin_binary_filepath: "{{zbxp_plugin_binary_dir}}/{{zbxp_plugin_name}}"
+
+- name: "{{zbxp_plugin_name}} - Create the local plugins directory"
+  file:
+    state: directory
+    path: "{{zbxp_plugin_binary_dir}}"
+  become: true
 
 - name: "{{zbxp_plugin_name}} - Get the binary"
   get_url:
     url: "{{zbxp_plugin_repository_binary_url}}"
     dest: "{{zbxp_plugin_binary_filepath}}"
-    owner: zabbix
+    owner: root
     group: zabbix
     mode: 0755
   become: true
@@ -16,7 +24,9 @@
 - name: "{{zbxp_plugin_name}} - Link custom plugin to Zabbix Agent2 configuration"
   lineinfile:
     dest: "/etc/zabbix/zabbix_agent2.d/plugins.d/{{zbxp_plugin_name}}.conf"
-    regexp: "Plugins.{{zbxp_plugin_name}}.System.Path={{zbxp_plugin_binary_filepath}}"
+    regexp: "Plugins..+.System.Path="
+    line:   "Plugins.{{zbxp_plugin_name}}.System.Path={{zbxp_plugin_binary_filepath}}"
+    create: yes
   become: true
   notify: "restart zabbix-agent2"
 
@@ -24,9 +34,7 @@
   lineinfile:
     dest: "/etc/zabbix/zabbix_agent2.d/plugins.d/{{zbxp_plugin_name}}.conf"
     regexp: "{{item.directive}}"
-    line: "{{item.value}}"
-    stat: present
-    create: "{{item.create|d('yes')}}"
+    line: "{{item.directive}}={{item.value}}"
   with_items: "{{zbxp_plugin_configurations}}"
   become: true
   notify: "restart zabbix-agent2"
